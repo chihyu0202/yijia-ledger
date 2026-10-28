@@ -1,0 +1,9 @@
+# clasp：專案 ID 與登入憑證不進版本庫
+backend/.clasp.json
+.clasprc.json
+
+# 編輯器與系統檔
+.vscode/
+.DS_Store
+node_modules/
+*.log
