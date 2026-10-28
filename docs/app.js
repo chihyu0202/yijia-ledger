@@ -3,6 +3,7 @@
 /*
  * 一家帳 — 前端
  * 第四階段：分頁、Google 登入、新增／修改／複製、紀錄、首頁統計、設定（分類、成員）
+ * 第五階段：Service Worker（只快取介面檔）
  */
 
 const SESSION_KEY = 'yj_session';
@@ -762,6 +763,7 @@ function bindEvents() {
 }
 
 async function init() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   bindEvents();
   updateOnline();
   if (await handleRedirect()) return;

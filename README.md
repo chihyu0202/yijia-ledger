@@ -17,7 +17,10 @@ yijia-ledger/
 │  ├─ index.html        畫面
 │  ├─ style.css         樣式
 │  ├─ app.js            登入、首頁統計、新增／修改／複製、紀錄、設定
-│  └─ config.js         後端 Web App 網址
+│  ├─ config.js         後端 Web App 網址
+│  ├─ sw.js             Service Worker（只快取介面檔）
+│  ├─ manifest.webmanifest  App 名稱、圖示（加到主畫面用）
+│  └─ icons/            圖示（icon.svg 為原始檔）
 ├─ backend/
 │  ├─ appsscript.json   時區 Asia/Taipei、權限範圍
 │  ├─ Util.gs           共用設定與工具、資料表讀寫
@@ -329,6 +332,8 @@ python3 -m http.server 8080
 
 月平均：今年只除到本月，過去的年份除以 12。
 
+> **更新前端時**：改了 `style.css`、`config.js` 或 `app.js`，請把 `index.html` 裡三個 `?v=` 和 `sw.js` 的 `VERSION` 一起加 1。否則瀏覽器可能拿新的 `index.html` 配舊的 `app.js`，畫面會空白。
+
 ### 步驟 D：在手機上測試
 
 `git push` 後等 1–2 分鐘，用手機開 https://chihyu0202.github.io/yijia-ledger/ （若還是舊畫面，關掉分頁重開）重複步驟 B、C。
@@ -345,3 +350,44 @@ python3 -m http.server 8080
 | 修改時顯示「資料已變更，請重新整理」 | 有人在你打開後改過這筆：按取消，回紀錄重新點開再改 |
 | 其他人停用的分類還出現在「新增」頁 | 切到「設定」頁或重新開啟 App 即會更新；若仍選了，儲存時會提示重新選擇 |
 | 打開後還是舊畫面 | 瀏覽器快取：電腦按 Ctrl+Shift+R（Mac：Cmd+Shift+R），手機關掉分頁重開 |
+
+---
+
+## 第五階段：PWA（加到主畫面、離線）
+
+**目標：** 可以加到手機主畫面，像 App 一樣全螢幕開啟；沒有網路時仍能打開介面，但不能儲存。
+
+- 登入串接與權限檢查已在第三、四階段完成（權限全部由後端判斷）。
+- `sw.js` 只快取介面檔（HTML、CSS、JS、圖示），**不快取任何資料**。離線時打開 App 會顯示「目前離線，無法儲存」與「無法連線」，不會顯示舊資料或假裝儲存成功。
+- 圖示：屋頂與雙手護著錢袋，原始檔 `docs/icons/icon.svg`，另有 192、512、180（iPhone）三種 PNG。
+
+### 步驟 A：電腦測試
+
+1. `cd docs && python3 -m http.server 8080`，開 http://localhost:8080/ ，按 Ctrl+Shift+R。
+2. Chrome 按 F12 → **Application**：
+   - **Manifest**：名稱「一家帳」、看得到圖示，沒有紅字錯誤。
+   - **Service Workers**：`sw.js` 狀態為 activated。
+   - **Cache Storage › yijia-ui**：只有介面檔，沒有 script.google.com 的網址。
+3. **Network** 分頁勾選 **Offline** → 重新整理：頁面仍會出現，上方紅條「目前離線，無法儲存」，並顯示「無法連線」與「重新載入」。取消 Offline → 按「重新載入」恢復正常。
+
+### 步驟 B：iPhone 加到主畫面
+
+1. 用 **Safari** 開 https://chihyu0202.github.io/yijia-ledger/ （其他瀏覽器在 iPhone 上不能加入主畫面為 App）。
+2. 下方 **分享** 按鈕 → **加入主畫面** → 名稱「一家帳」→ **新增**。
+3. 從主畫面打開：全螢幕、沒有網址列。登入一次（會跳到 Google 再回來）。
+4. 關掉 App 再開，應該不用重新登入（session 30 天）。
+
+### 步驟 C：Android 加到主畫面
+
+1. 用 **Chrome** 開 https://chihyu0202.github.io/yijia-ledger/ 。
+2. 右上角 **⋮** → **加到主畫面**（或「安裝應用程式」）→ **安裝**。
+3. 從主畫面打開並登入，同 iPhone 步驟 3–4。
+
+### 常見錯誤
+
+| 訊息／狀況 | 處理方式 |
+|---|---|
+| iPhone 從主畫面登入後回到 Safari，而不是 App | 第六階段實測項目；先回報情況，必要時調整登入流程 |
+| 圖示是網頁截圖而不是一家帳圖示 | 加入主畫面前先強制重新整理；或刪掉主畫面圖示重新加入 |
+| 更新後手機還是舊版 | 完全關掉 App（從多工畫面滑掉）再開；若仍是舊版，確認 `?v=` 與 `sw.js` 的 `VERSION` 有加 1 |
+| DevTools 顯示 Service Worker 錯誤 | 確認是用 `http://localhost:8080` 或 GitHub Pages 開啟（直接開 html 檔不支援 Service Worker） |

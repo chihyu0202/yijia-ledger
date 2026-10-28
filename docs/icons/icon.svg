@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 一家帳圖示：屋頂與雙手護著錢袋。圖形都在中央 80% 內，可當 maskable 圖示 -->
+  <rect width="512" height="512" fill="#1F6F63"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 屋頂 -->
+    <path d="M118 214 L256 104 L394 214"/>
+    <!-- 錢袋 -->
+    <path d="M232 196 L280 196 L268 222 C318 244 338 290 332 322 C326 352 294 364 256 364 C218 364 186 352 180 322 C174 290 194 244 244 222 Z"/>
+    <path d="M240 222 L272 222" stroke-width="16"/>
+    <!-- 錢袋上的 $ -->
+    <path d="M276 266 C268 256 248 254 240 264 C232 276 246 284 256 288 C268 292 282 300 274 314 C266 326 244 324 236 314" stroke-width="14"/>
+    <path d="M256 250 L256 330" stroke-width="14"/>
+    <!-- 雙手 -->
+    <path d="M128 300 C130 360 168 404 226 410 L256 410"/>
+    <path d="M384 300 C382 360 344 404 286 410 L256 410"/>
+    <path d="M128 300 L148 336"/>
+    <path d="M384 300 L364 336"/>
+  </g>
+</svg>
