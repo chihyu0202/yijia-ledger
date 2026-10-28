@@ -16,8 +16,16 @@ yijia-ledger/
 ├─ docs/            前端（目前只有建置中頁面）
 ├─ backend/
 │  ├─ appsscript.json   時區 Asia/Taipei、權限範圍
-│  ├─ Util.gs           共用設定與工具
-│  └─ Setup.gs          setup()、checkSetup()
+│  ├─ Util.gs           共用設定與工具、資料表讀寫
+│  ├─ Setup.gs          setup()、checkSetup()
+│  ├─ Code.gs           Web App 入口（doPost 依 action 分派、錯誤處理）
+│  ├─ Auth.gs           Google 登入驗證、session、me
+│  ├─ Expenses.gs       開支新增／修改／作廢／列表、可見度規則
+│  ├─ Stats.gs          月統計、年統計
+│  ├─ Categories.gs     分類
+│  ├─ Members.gs        成員
+│  └─ Tests.gs          在編輯器執行的測試函式
+├─ tests/           本機模擬測試（node）
 ├─ README.md
 └─ .gitignore
 ```
@@ -28,7 +36,7 @@ yijia-ledger/
 
 **目標：** 完成 GitHub 專案、Apps Script 專案、試算表三張表與初始資料、Google 登入用的 OAuth 用戶端。
 
-**以下所有 Google 操作，都用擁有者帳號 `Hsieh20200202@gmail.com` 登入。** 建議在 Chrome 開一個只登入這個帳號的「使用者設定檔」，避免多個帳號互相干擾。
+**以下所有 Google 操作，都用**擁有者的 Gmail 帳號**登入。** 建議在 Chrome 開一個只登入這個帳號的「使用者設定檔」，避免多個帳號互相干擾。
 
 ### 步驟 A：放好檔案
 
@@ -191,3 +199,81 @@ git status       # 應該沒有 .clasp.json（已被 .gitignore 排除）
 | 授權來源格式錯誤 | JavaScript 來源只能是 `https://chihyu0202.github.io`，不能有路徑或結尾斜線 |
 
 setup() 可以放心重複執行：已存在的表與資料不會被覆蓋或重複新增。
+
+---
+
+## 第三階段：後端 API
+
+**目標：** 後端提供登入、開支、分類、成員、統計 API，以 Web App 部署，取得前端要呼叫的網址。
+
+### 本機測試（不需要網路）
+
+```bash
+node tests/mock_setup.test.js
+node tests/mock_api.test.js
+```
+
+兩個都應顯示 `failed 0`。
+
+### 步驟 A：上傳程式
+
+```bash
+cd backend
+clasp push
+```
+
+若詢問「Manifest file has been updated. Do you want to push and overwrite?」，輸入 `y`（這次 `appsscript.json` 新增了對外連線權限與 Web App 設定）。
+
+### 步驟 B：重新授權並執行測試函式
+
+1. `clasp open-script` 開啟線上編輯器，左側應多出 `Code.gs`、`Auth.gs`、`Expenses.gs`、`Stats.gs`、`Categories.gs`、`Members.gs`、`Tests.gs`。
+2. 開啟 `Tests.gs` → 函式選 **testLoginRejectsBadToken** → **▷ 執行**。
+   - 因為新增了「連線到外部服務」權限，會再要求一次授權：用擁有者帳號 → **進階 › 前往（不安全）** → **允許**。
+   - 執行記錄應出現 `✔ 假 token 被拒絕，對外連線正常`。
+3. 函式改選 **testBackend** → **▷ 執行**。執行記錄每一行都應是 ✔，最後是 `✔ 全部通過（測試紀錄已刪除）`。
+   這個測試會用第一位管理員的身分新增一筆「【測試】請忽略」，跑完會自動刪除，不會留在試算表。
+
+### 步驟 C：部署 Web App
+
+在 `backend/` 執行：
+
+```bash
+clasp deploy --description "一家帳 API"
+```
+
+會顯示 `Deployed <deploymentId> @1`。Web App 網址是：
+
+```
+https://script.google.com/macros/s/<deploymentId>/exec
+```
+
+- 部署設定來自 `appsscript.json`：執行身分「我」、存取「任何人」。權限全部在後端檢查，沒有 session 什麼都拿不到。
+- 用瀏覽器打開這個網址，應看到 `{"ok":true,"data":{"app":"一家帳"}}`。
+- 請把 deploymentId 記在自己的筆記；第四階段前端會用到這個網址。
+
+**之後更新後端**，一律用同一個 deployment，網址才不會變：
+
+```bash
+clasp push
+clasp deploy -i <deploymentId> --description "說明這次改了什麼"
+```
+
+只執行 `clasp push` 不會更新 Web App（Web App 跑的是部署時的版本）。
+
+### 完成後應該有
+
+- [ ] 兩個本機測試 `failed 0`
+- [ ] 編輯器 testLoginRejectsBadToken、testBackend 全部 ✔
+- [ ] Web App 網址打開看到 `{"ok":true,...}`
+
+### 常見錯誤
+
+| 訊息／狀況 | 處理方式 |
+|---|---|
+| 執行測試時「需要授權」或 `UrlFetchApp` 權限錯誤 | 步驟 B-2 重新授權 |
+| testBackend：找不到啟用中的管理員 | 檢查 Members 工作表有 admin 且 `is_active` 已勾選、有 email |
+| `CONFIG`：尚未設定 GOOGLE_CLIENT_ID | 第二階段步驟 G-7 |
+| `CONFIG`：PERSONAL_VISIBILITY 設定錯誤 | 指令碼屬性只能填 `full`、`summary`、`private` |
+| 打開網址顯示「找不到指令碼函式」 | 部署的是舊版本：先 `clasp push`，再 `clasp deploy -i <deploymentId>` |
+| 打開網址要求登入 Google 或顯示沒有權限 | 部署的存取權不是「任何人」：在編輯器 **部署 › 管理部署作業** 檢查 |
+| 每次部署網址都不同 | 沒有加 `-i <deploymentId>`；多出來的部署可在「管理部署作業」封存 |

@@ -1,6 +1,7 @@
 /**
  * 一家帳 — 共用設定與工具
  * 第二階段：工作表定義、時間與 ID 產生、讀取設定
+ * 第三階段：錯誤、鎖、資料表讀寫
  */
 
 const APP = {
@@ -88,4 +89,103 @@ function maskEmail_(email) {
   const at = email.indexOf('@');
   if (at <= 2) return '***' + email.slice(at);
   return email.slice(0, 2) + '***' + email.slice(at);
+}
+
+/* ---------- 第三階段：錯誤、鎖、資料表讀寫 ---------- */
+
+/** 給使用者看的錯誤；message 為中文 */
+function fail_(code, message) {
+  const e = new Error(message);
+  e.appCode = code;
+  return e;
+}
+
+/** 所有寫入都包在 Script Lock 內 */
+function withLock_(fn) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) throw fail_('BUSY', '系統忙碌中，請稍後再試。');
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function todayStr_() {
+  return Utilities.formatDate(new Date(), APP.TZ, 'yyyy-MM-dd');
+}
+
+function isTrue_(v) {
+  return v === true || String(v).toUpperCase() === 'TRUE';
+}
+
+/** 金額轉成「分」再加總，避免浮點誤差 */
+function toCents_(amount) {
+  return Math.round(Number(amount) * 100);
+}
+
+/** 把一列值轉成物件；順手修正被試算表自動轉型的值（日期、勾選框） */
+function rowToObj_(name, values) {
+  const obj = {};
+  SHEET_DEFS[name].forEach(function (h, i) {
+    let v = values[i];
+    if (v instanceof Date) {
+      v = Utilities.formatDate(v, APP.TZ, h === 'expense_date' ? 'yyyy-MM-dd' : "yyyy-MM-dd'T'HH:mm:ssXXX");
+    }
+    if (CHECKBOX_COLUMNS[name].indexOf(h) >= 0) v = isTrue_(v);
+    else if (TEXT_COLUMNS[name].indexOf(h) >= 0) v = v === null || v === undefined ? '' : String(v);
+    obj[h] = v;
+  });
+  return obj;
+}
+
+/** 讀取整張表；每筆附 _row（試算表列號），只在後端內部使用 */
+function readTable_(name) {
+  const sheet = getSheet_(name);
+  const n = countDataRows_(sheet);
+  const values = n ? sheet.getRange(2, 1, n, SHEET_DEFS[name].length).getValues() : [];
+  const rows = [];
+  values.forEach(function (v, i) {
+    if (v[0] === '' || v[0] === null) return;
+    const obj = rowToObj_(name, v);
+    obj._row = i + 2;
+    rows.push(obj);
+  });
+  return { sheet: sheet, rows: rows };
+}
+
+function writeRow_(sheet, name, rowNum, obj) {
+  const values = SHEET_DEFS[name].map(function (h) {
+    return obj[h] === undefined || obj[h] === null ? '' : obj[h];
+  });
+  sheet.getRange(rowNum, 1, 1, values.length).setValues([values]);
+}
+
+/** 在最後一筆資料下一列寫入；先套文字格式再寫值，最後加勾選框 */
+function appendRow_(sheet, name, obj) {
+  const headers = SHEET_DEFS[name];
+  const row = lastIdRow_(sheet) + 1;
+  if (row > sheet.getMaxRows()) sheet.insertRowsAfter(sheet.getMaxRows(), 1);
+  TEXT_COLUMNS[name].forEach(function (col) {
+    sheet.getRange(row, headers.indexOf(col) + 1).setNumberFormat('@');
+  });
+  writeRow_(sheet, name, row, obj);
+  applyCheckboxes_(sheet, name, row, 1);
+  return row;
+}
+
+/** 去掉內部欄位（_row） */
+function publicObj_(obj) {
+  const out = {};
+  Object.keys(obj).forEach(function (k) {
+    if (k.charAt(0) !== '_') out[k] = obj[k];
+  });
+  return out;
+}
+
+function requireString_(v, label, maxLen, allowEmpty) {
+  const s = v === null || v === undefined ? '' : String(v).trim();
+  if (!s && !allowEmpty) throw fail_('VALIDATION', label + '為必填。');
+  if (s.length > maxLen) throw fail_('VALIDATION', label + '最多 ' + maxLen + ' 字。');
+  return s;
 }
