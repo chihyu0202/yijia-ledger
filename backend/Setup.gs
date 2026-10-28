@@ -28,8 +28,11 @@ function setup() {
     });
     removeBlankDefaultSheets_(ss);
 
+    // 先檢查成員設定，有錯就整個停下，避免只建好一半的資料
+    const pendingMembers = countDataRows_(ss.getSheetByName('Members')) > 0 ? null : loadInitialMembers_(props);
+
     const catAdded = seedCategories_(ss);
-    const memAdded = seedMembers_(ss, props);
+    const memAdded = pendingMembers ? seedMembers_(ss, props, pendingMembers) : 0;
 
     if (!props.getProperty(PROP.PERSONAL_VISIBILITY)) {
       props.setProperty(PROP.PERSONAL_VISIBILITY, 'full');
@@ -52,7 +55,7 @@ function checkSetup() {
 
   Object.keys(SHEET_DEFS).forEach(function (name) {
     const sheet = ss.getSheetByName(name);
-    console.log((sheet ? '✔ ' : '✘ ') + name + (sheet ? '：資料 ' + Math.max(sheet.getLastRow() - 1, 0) + ' 列' : '：不存在'));
+    console.log((sheet ? '✔ ' : '✘ ') + name + (sheet ? '：資料 ' + countDataRows_(sheet) + ' 列' : '：不存在'));
   });
 
   const cats = readRows_(ss.getSheetByName('Categories'));
@@ -105,16 +108,44 @@ function ensureSheet_(ss, name) {
     }
   }
 
+  // 清掉最後一筆資料之後的殘留內容（例如舊版程式在空白列留下的勾選框）
+  const lastId = lastIdRow_(sheet);
+  const tail = sheet.getMaxRows() - lastId;
+  if (tail > 0) {
+    sheet.getRange(lastId + 1, 1, tail, headers.length).clearContent().clearDataValidations();
+  }
+
   const dataRows = sheet.getMaxRows() - 1;
   if (dataRows > 0) {
     TEXT_COLUMNS[name].forEach(function (col) {
       sheet.getRange(2, headers.indexOf(col) + 1, dataRows, 1).setNumberFormat('@');
     });
-    CHECKBOX_COLUMNS[name].forEach(function (col) {
-      sheet.getRange(2, headers.indexOf(col) + 1, dataRows, 1).insertCheckboxes();
-    });
   }
   return sheet;
+}
+
+/** 只在真正有資料的列加上勾選框（空白列加勾選框會被當成有資料） */
+function applyCheckboxes_(sheet, name, startRow, numRows) {
+  const headers = SHEET_DEFS[name];
+  CHECKBOX_COLUMNS[name].forEach(function (col) {
+    sheet.getRange(startRow, headers.indexOf(col) + 1, numRows, 1).insertCheckboxes();
+  });
+}
+
+/** 第一欄（ID）有值的最後一列列號；沒有資料時回傳 1（標題列） */
+function lastIdRow_(sheet) {
+  const last = sheet.getLastRow();
+  if (last < 2) return 1;
+  const ids = sheet.getRange(2, 1, last - 1, 1).getValues();
+  for (let i = ids.length - 1; i >= 0; i--) {
+    if (ids[i][0] !== '' && ids[i][0] !== null) return i + 2;
+  }
+  return 1;
+}
+
+/** 以 ID 欄判斷的資料列數 */
+function countDataRows_(sheet) {
+  return lastIdRow_(sheet) - 1;
 }
 
 /** 刪除新試算表自帶的空白工作表（例如「工作表1」） */
@@ -130,12 +161,13 @@ function removeBlankDefaultSheets_(ss) {
 
 function seedCategories_(ss) {
   const sheet = ss.getSheetByName('Categories');
-  if (sheet.getLastRow() > 1) return 0;
+  if (countDataRows_(sheet) > 0) return 0;
   const now = nowIso_();
   const rows = DEFAULT_CATEGORIES.map(function (c) {
     return [c[0], c[1], c[2], true, now, now];
   });
   sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  applyCheckboxes_(sheet, 'Categories', 2, rows.length);
   return rows.length;
 }
 
@@ -144,21 +176,24 @@ function seedCategories_(ss) {
  * 格式：[{"name":"Gloria","email":"xxx@gmail.com","role":"admin"},{"name":"小珠寶"}]
  * 成功後會刪除 INITIAL_MEMBERS，之後以 Members 工作表為準。
  */
-function seedMembers_(ss, props) {
-  const sheet = ss.getSheetByName('Members');
-  if (sheet.getLastRow() > 1) return 0;
-
+function loadInitialMembers_(props) {
   const raw = props.getProperty(PROP.INITIAL_MEMBERS);
   if (!raw) {
     throw new Error('尚未設定 INITIAL_MEMBERS。請到「專案設定 › 指令碼屬性」新增（格式見 README 步驟 D），再重新執行 setup()。');
   }
-  const members = parseInitialMembers_(raw);
+  return parseInitialMembers_(raw);
+}
+
+function seedMembers_(ss, props, members) {
+  const sheet = ss.getSheetByName('Members');
+  if (countDataRows_(sheet) > 0) return 0;
 
   const now = nowIso_();
   const rows = members.map(function (m, i) {
     return [newId_('m_'), m.name, m.email, m.role, (i + 1) * 10, true, '', now, now];
   });
   sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  applyCheckboxes_(sheet, 'Members', 2, rows.length);
   props.deleteProperty(PROP.INITIAL_MEMBERS);
   return rows.length;
 }
@@ -200,10 +235,10 @@ function parseInitialMembers_(raw) {
 
 /** 讀取整張工作表為物件陣列（標題列當鍵） */
 function readRows_(sheet) {
-  if (!sheet || sheet.getLastRow() < 2) return [];
+  if (!sheet || countDataRows_(sheet) === 0) return [];
   const values = sheet.getDataRange().getValues();
   const headers = values.shift();
-  return values.map(function (row) {
+  return values.filter(function (row) { return row[0] !== '' && row[0] !== null; }).map(function (row) {
     const obj = {};
     headers.forEach(function (h, i) { obj[h] = row[i]; });
     return obj;
