@@ -108,3 +108,90 @@ main {
   background: var(--primary-dark); color: #fff; padding: 12px 20px; border-radius: 12px;
   max-width: calc(100% - 32px); z-index: 20;
 }
+
+/* ---------- 第四階段 B–D ---------- */
+.mt { margin-top: 10px; }
+.muted { color: var(--muted); }
+.error-text { color: var(--danger); }
+
+/* 篩選列 */
+.controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.segmented { display: flex; background: var(--primary-light); border-radius: 12px; padding: 4px; }
+.segmented button {
+  flex: 1; min-height: 40px; border: 0; border-radius: 9px; background: none;
+  color: var(--primary-dark); cursor: pointer;
+}
+.segmented button[aria-pressed="true"] { background: #fff; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.period { display: flex; align-items: center; justify-content: space-between; }
+.period strong { font-size: 18px; }
+.icon-btn {
+  min-width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 12px;
+  background: #fff; font-size: 18px; cursor: pointer;
+}
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.select {
+  width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line);
+  border-radius: 10px; background: #fff; font-size: 16px;
+}
+.filters { display: flex; gap: 8px; }
+.filters .select { flex: 1; min-width: 0; }
+
+/* 統計 */
+.total-card { background: var(--primary); color: #fff; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+.total-card .label { color: #CFE5E0; margin: 0; }
+.total-card .big { font-size: 32px; font-weight: 700; line-height: 1.2; }
+.total-card .sub { color: #CFE5E0; font-size: 14px; }
+.section-title { font-size: 16px; margin: 20px 0 8px; color: var(--primary-dark); }
+.bar-row {
+  display: grid; grid-template-columns: 5.5em 1fr auto; align-items: center; gap: 8px;
+  min-height: 36px; width: 100%; padding: 0; border: 0; background: none; text-align: left;
+}
+button.bar-row { min-height: 44px; cursor: pointer; }
+.bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { height: 10px; background: var(--primary-light); border-radius: 5px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--primary); border-radius: 5px; }
+.bar-amount { font-variant-numeric: tabular-nums; text-align: right; min-width: 5em; }
+
+/* 紀錄列表 */
+.list-summary { margin: 0 0 8px; color: var(--muted); }
+.date-head { margin: 16px 0 6px; font-size: 14px; color: var(--muted); }
+.rec {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px;
+  padding: 10px 12px; margin-bottom: 6px; text-align: left;
+  background: #fff; border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
+}
+.rec-main { flex: 1; min-width: 0; }
+.rec-item { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-sub { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* 設定 */
+.row {
+  display: flex; align-items: center; gap: 6px; min-height: 52px;
+  padding: 4px 0; border-bottom: 1px solid var(--line);
+}
+.row:last-child { border-bottom: 0; }
+.row-main { flex: 1; min-width: 0; }
+.row-sub { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 6px; background: #EEE; color: var(--muted); margin-left: 6px; }
+.card h3 { margin: 0 0 8px; font-size: 18px; color: var(--primary-dark); }
+.check { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-bottom: 12px; }
+.check input { width: 22px; height: 22px; accent-color: var(--primary); }
+
+/* 底部面板 */
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.35);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet {
+  width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  background: var(--bg); border-radius: 16px 16px 0 0;
+  padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
+}
+.sheet h3 { margin: 0 0 4px; font-size: 20px; }
+.sheet .big { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+.detail { display: grid; grid-template-columns: 4em 1fr; gap: 6px 12px; margin: 0 0 16px; }
+.detail dt { color: var(--muted); }
+.detail dd { margin: 0; word-break: break-word; }
+.btn-danger { background: #FBE9E7; color: var(--danger); }
+.sheet .btn { margin-top: 8px; }

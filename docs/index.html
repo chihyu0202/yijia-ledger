@@ -19,13 +19,14 @@
 
   <div id="app" hidden>
     <main>
-      <!-- 首頁 -->
+      <!-- 首頁：統計 -->
       <section id="tab-home" class="tab" hidden>
         <h2 class="tab-title">首頁</h2>
-        <p class="placeholder">統計（第四階段 C 製作）</p>
+        <div id="home-controls" class="controls"></div>
+        <div id="home-body"></div>
       </section>
 
-      <!-- 新增 -->
+      <!-- 新增／修改／複製 -->
       <section id="tab-add" class="tab" hidden>
         <h2 class="tab-title" id="form-title">新增</h2>
         <form id="expense-form" novalidate>
@@ -64,19 +65,21 @@
 
           <p id="form-error" class="form-error" role="alert"></p>
           <button id="save-btn" class="btn btn-primary btn-block" type="submit">儲存</button>
+          <button id="cancel-btn" class="btn btn-secondary btn-block mt" type="button" hidden>取消</button>
         </form>
       </section>
 
       <!-- 紀錄 -->
       <section id="tab-records" class="tab" hidden>
         <h2 class="tab-title">紀錄</h2>
-        <p class="placeholder">紀錄列表（第四階段 B 製作）</p>
+        <div id="records-controls" class="controls"></div>
+        <div id="records-body"></div>
       </section>
 
       <!-- 設定 -->
       <section id="tab-settings" class="tab" hidden>
         <h2 class="tab-title">設定</h2>
-        <p class="placeholder">分類、成員管理（第四階段 D 製作）</p>
+        <div id="settings-body"></div>
         <div class="card">
           <p>目前登入：<strong id="me-name"></strong></p>
           <button id="logout-btn" class="btn btn-secondary btn-block" type="button">登出</button>
@@ -90,6 +93,13 @@
       <button type="button" data-tab="records">紀錄</button>
       <button type="button" data-tab="settings">設定</button>
     </nav>
+  </div>
+
+  <!-- 底部面板 -->
+  <div id="sheet" class="sheet-backdrop" hidden>
+    <div class="sheet" role="dialog" aria-modal="true">
+      <div id="sheet-body"></div>
+    </div>
   </div>
 
   <div id="toast" class="toast" hidden></div>
