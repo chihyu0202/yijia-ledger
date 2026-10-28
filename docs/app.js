@@ -4,6 +4,7 @@
  * 一家帳 — 前端
  * 第四階段：分頁、Google 登入、新增／修改／複製、紀錄、首頁統計、設定（分類、成員）
  * 第五階段：Service Worker（只快取介面檔）
+ * 第七階段：畫面資料暫存與預先載入（只在記憶體）
  */
 
 const SESSION_KEY = 'yj_session';
@@ -138,6 +139,50 @@ async function api(action, payload) {
   return body.data;
 }
 
+/* ---------- 畫面資料暫存 ---------- */
+
+// 已載入過的畫面資料（只在記憶體，關掉 App 就清除）。
+// 再次進入同一畫面時先顯示暫存，同時向後端取最新；資料有變才重畫。
+const viewCache = new Map();
+
+function cacheKey(action, payload) {
+  const clean = Object.keys(payload || {}).sort().filter((k) => payload[k] !== '' && payload[k] !== undefined)
+    .map((k) => [k, payload[k]]);
+  return action + JSON.stringify(clean);
+}
+
+/** 資料有異動（新增、修改、作廢、設定）後清掉暫存，並在背景先抓這個月的資料 */
+function invalidateCache(month) {
+  viewCache.clear();
+  prefetch('expenses.list', { month: month || today().slice(0, 7) });
+}
+
+function prefetch(action, payload) {
+  api(action, payload).then((data) => viewCache.set(cacheKey(action, payload), data)).catch(() => {});
+}
+
+/**
+ * 載入某個分頁的內容：view 為 home／records／settings。
+ * fetchFn 回傳資料；render(data) 畫出畫面；retry 為失敗時「重試」要做的事。
+ */
+async function loadView(view, key, fetchFn, render, retry) {
+  const seq = ++state.seq[view];
+  const box = $(view + '-body');
+  const hit = viewCache.get(key);
+  if (hit) render(hit);
+  else box.replaceChildren(loadingBox());
+  try {
+    const data = await fetchFn();
+    if (seq !== state.seq[view]) return;
+    viewCache.set(key, data);
+    if (!hit || JSON.stringify(hit) !== JSON.stringify(data)) render(data);
+  } catch (e) {
+    if (seq !== state.seq[view]) return;
+    if (hit) toast('無法更新：' + e.message);
+    else box.replaceChildren(errorBox(e.message, retry));
+  }
+}
+
 /* ---------- 登入 ---------- */
 
 function saveSession(session) {
@@ -148,6 +193,7 @@ function saveSession(session) {
 function clearSession() {
   state.session = null;
   state.me = null;
+  viewCache.clear();
   localStorage.removeItem(SESSION_KEY);
 }
 
@@ -238,7 +284,8 @@ async function enterApp() {
   $('app').hidden = false;
   $('me-name').textContent = state.me.member.display_name;
   openForm('create');
-  showTab('home');
+  showTab('home'); // 首頁本月資料與「紀錄」預設畫面是同一份，看完首頁切到紀錄不用再等
+  fetchSettings().then((data) => viewCache.set('settings', data)).catch(() => {});
 }
 
 async function logout() {
@@ -340,20 +387,14 @@ function renderHomeControls() {
     select('分類', categoryOptions(), H.categoryId, (v) => { H.categoryId = v; loadHome(); }));
 }
 
-async function loadHome() {
-  const seq = ++state.seq.home;
+function loadHome() {
   const H = state.home;
   renderHomeControls();
-  $('home-body').replaceChildren(loadingBox());
-  try {
-    const data = H.mode === 'month'
-      ? await api('expenses.list', { month: H.month, category_id: H.categoryId })
-      : await api('stats.year', { year: H.year, category_id: H.categoryId });
-    if (seq !== state.seq.home) return;
-    $('home-body').replaceChildren(...(H.mode === 'month' ? homeMonth(data.stats) : homeYear(data)));
-  } catch (e) {
-    if (seq === state.seq.home) $('home-body').replaceChildren(errorBox(e.message, loadHome));
-  }
+  const isMonth = H.mode === 'month';
+  const action = isMonth ? 'expenses.list' : 'stats.year';
+  const payload = isMonth ? { month: H.month, category_id: H.categoryId } : { year: H.year, category_id: H.categoryId };
+  return loadView('home', cacheKey(action, payload), () => api(action, payload),
+    (data) => $('home-body').replaceChildren(...(isMonth ? homeMonth(data.stats) : homeYear(data))), loadHome);
 }
 
 function homeMonth(stats) {
@@ -405,19 +446,12 @@ function renderRecordsControls() {
       select('分類', categoryOptions(), R.categoryId, (v) => { R.categoryId = v; loadRecords(); })));
 }
 
-async function loadRecords() {
-  const seq = ++state.seq.records;
+function loadRecords() {
   const R = state.records;
   renderRecordsControls();
-  $('records-body').replaceChildren(loadingBox());
-  try {
-    const data = await api('expenses.list', { month: R.month, scope: R.scope, category_id: R.categoryId });
-    if (seq !== state.seq.records) return;
-    R.items = data.items;
-    renderRecords();
-  } catch (e) {
-    if (seq === state.seq.records) $('records-body').replaceChildren(errorBox(e.message, loadRecords));
-  }
+  const payload = { month: R.month, scope: R.scope, category_id: R.categoryId };
+  return loadView('records', cacheKey('expenses.list', payload), () => api('expenses.list', payload),
+    (data) => { R.items = data.items; renderRecords(); }, loadRecords);
 }
 
 function renderRecords() {
@@ -468,6 +502,7 @@ async function voidRecord(e) {
   if (!confirm('確定要作廢「' + e.item + ' ' + money(e.amount) + '」嗎？')) return;
   try {
     await api('expenses.void', { expense_id: e.expense_id });
+    invalidateCache(e.expense_date.slice(0, 7));
     closeSheet();
     toast('已作廢');
     loadRecords();
@@ -571,9 +606,11 @@ async function onSubmit(ev) {
     if (mode === 'edit') {
       payload.updated_at = state.form.original.updated_at;
       await api('expenses.update', payload);
+      invalidateCache(payload.expense_date.slice(0, 7));
       toast('已更新');
     } else {
       await api('expenses.create', payload);
+      invalidateCache(payload.expense_date.slice(0, 7));
       toast('已儲存');
     }
     openForm('create');
@@ -599,19 +636,18 @@ function updateOnline() {
 
 /* ---------- 設定：分類、成員 ---------- */
 
-async function loadSettings() {
-  const seq = ++state.seq.settings;
-  $('settings-body').replaceChildren(loadingBox());
-  try {
-    const [categories, members, me] = await Promise.all([api('categories.list'), api('members.list'), api('me')]);
-    if (seq !== state.seq.settings) return;
-    state.categories = categories;
-    state.me = me; // 順便更新新增表單的選項（其他人可能改過分類、成員）
+async function fetchSettings() {
+  const [categories, members, me] = await Promise.all([api('categories.list'), api('members.list'), api('me')]);
+  return { categories, members, me };
+}
+
+function loadSettings() {
+  return loadView('settings', 'settings', fetchSettings, (data) => {
+    state.categories = data.categories;
+    state.me = data.me; // 順便更新新增表單的選項（其他人可能改過分類、成員）
     if (state.form.mode === 'create') renderChips();
-    renderSettings(members);
-  } catch (e) {
-    if (seq === state.seq.settings) $('settings-body').replaceChildren(errorBox(e.message, loadSettings));
-  }
+    renderSettings(data.members);
+  }, loadSettings);
 }
 
 /** 設定頁的排序：執行後重新整理設定頁（含 me）；失敗顯示訊息 */
@@ -624,6 +660,7 @@ async function settingsAction(fn) {
   state.busy = true;
   try {
     await fn();
+    viewCache.clear();
     await loadSettings();
   } catch (e) {
     toast(e.message);
@@ -693,6 +730,7 @@ async function saveFromSheet(errEl, fn, doneMsg) {
   }
   closeSheet();
   toast(doneMsg);
+  viewCache.clear();
   await loadSettings();
 }
 

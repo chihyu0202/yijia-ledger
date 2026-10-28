@@ -15,6 +15,7 @@ const PROP = {
   GOOGLE_CLIENT_ID: 'GOOGLE_CLIENT_ID',
   INITIAL_MEMBERS: 'INITIAL_MEMBERS',
   PERSONAL_VISIBILITY: 'PERSONAL_VISIBILITY',
+  BACKUP_FOLDER_ID: 'BACKUP_FOLDER_ID',
 };
 
 const VISIBILITY_VALUES = ['full', 'summary', 'private'];
@@ -67,10 +68,15 @@ function props_() {
   return PropertiesService.getScriptProperties();
 }
 
+/** 同一次執行（一個請求）只開啟一次試算表 */
+let spreadsheet_ = null;
+
 function getSpreadsheet_() {
+  if (spreadsheet_) return spreadsheet_;
   const id = props_().getProperty(PROP.SPREADSHEET_ID);
   if (!id) throw new Error('尚未設定 SPREADSHEET_ID，請先執行 setup()。');
-  return SpreadsheetApp.openById(id);
+  spreadsheet_ = SpreadsheetApp.openById(id);
+  return spreadsheet_;
 }
 
 function getSheet_(name) {

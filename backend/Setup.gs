@@ -69,6 +69,9 @@ function checkSetup() {
   const clientId = props.getProperty(PROP.GOOGLE_CLIENT_ID);
   console.log((clientId ? '✔ ' : '✘ ') + 'GOOGLE_CLIENT_ID' + (clientId ? '' : '：尚未設定（第二階段步驟 G）'));
   console.log('PERSONAL_VISIBILITY：' + (props.getProperty(PROP.PERSONAL_VISIBILITY) || '（未設定）'));
+
+  const hasBackup = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'backupSpreadsheet'; });
+  console.log((hasBackup ? '✔ ' : '✘ ') + '每週備份觸發器' + (hasBackup ? '' : '：尚未建立（執行 installBackupTrigger）'));
 }
 
 /* ---------- 以下為內部函式 ---------- */

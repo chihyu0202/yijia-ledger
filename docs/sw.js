@@ -6,7 +6,7 @@
  */
 
 const CACHE = 'yijia-ui';
-const VERSION = '5'; // 與 index.html 的 ?v= 相同
+const VERSION = '6'; // 與 index.html 的 ?v= 相同
 const ASSETS = [
   './',
   'style.css?v=' + VERSION,

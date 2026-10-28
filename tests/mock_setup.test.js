@@ -51,6 +51,7 @@ function makeEnv() {
   const ctx = {
     console: { log: (m) => logs.push(m) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    ScriptApp: { getProjectTriggers: () => [] },
     PropertiesService: { getScriptProperties: () => ({
       getProperty: (k) => (k in store ? store[k] : null),
       setProperty: (k, v) => { store[k] = String(v); },
