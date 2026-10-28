@@ -13,7 +13,11 @@
 
 ```
 yijia-ledger/
-├─ docs/            前端（目前只有建置中頁面）
+├─ docs/            前端
+│  ├─ index.html        畫面
+│  ├─ style.css         樣式
+│  ├─ app.js            登入、分頁、表單
+│  └─ config.js         後端 Web App 網址
 ├─ backend/
 │  ├─ appsscript.json   時區 Asia/Taipei、權限範圍
 │  ├─ Util.gs           共用設定與工具、資料表讀寫
@@ -277,3 +281,50 @@ clasp deploy -i <deploymentId> --description "說明這次改了什麼"
 | 打開網址顯示「找不到指令碼函式」 | 部署的是舊版本：先 `clasp push`，再 `clasp deploy -i <deploymentId>` |
 | 打開網址要求登入 Google 或顯示沒有權限 | 部署的存取權不是「任何人」：在編輯器 **部署 › 管理部署作業** 檢查 |
 | 每次部署網址都不同 | 沒有加 `-i <deploymentId>`；多出來的部署可在「管理部署作業」封存 |
+
+---
+
+## 第四階段 A：登入與新增開支
+
+**目標：** 用 Google 帳號登入，在「新增」分頁記一筆開支並寫進試算表。首頁、紀錄、設定分頁在 4B–4D 製作。
+
+- Google 登入用的 Client ID 不寫進前端程式碼：前端登入前呼叫後端 `auth.config`，從指令碼屬性讀取。
+- `docs/config.js` 是後端 Web App 網址。這個網址公開無妨：沒有登入 session 什麼都拿不到。
+
+### 步驟 A：更新後端（新增了 `auth.config`）
+
+```bash
+cd backend
+clasp push
+clasp deploy -i <deploymentId> --description "第四階段 A：auth.config"
+```
+
+`<deploymentId>` 就是 `docs/config.js` 網址中 `/s/` 和 `/exec` 之間那一段。
+
+### 步驟 B：在電腦上測試
+
+```bash
+cd docs
+python3 -m http.server 8080
+```
+
+用瀏覽器開 http://localhost:8080/ （一定要用 `localhost:8080`，這是 OAuth 用戶端登記的網址）：
+
+1. 按「使用 Google 登入」→ 選擁有者帳號 → 回到一家帳，看到底部四個分頁。
+2. 「新增」：輸入金額、項目，選歸屬與分類 → 儲存，出現「已儲存」，表單清空。
+3. 打開試算表 Expenses，確認多了一列：日期是文字 `yyyy-MM-dd`、`created_by` 是你的 member_id、`status` 是 `active`。
+4. 「設定」→ 登出，回到登入畫面。
+
+### 步驟 C：在手機上測試
+
+`git push` 後等 1–2 分鐘，用手機開 https://chihyu0202.github.io/yijia-ledger/ 重複步驟 B 的 1–4。
+
+### 常見錯誤
+
+| 訊息／狀況 | 處理方式 |
+|---|---|
+| 按登入後顯示「不支援的操作：auth.config」 | 後端還是舊版：做步驟 A，記得加 `-i <deploymentId>` |
+| Google 顯示 `redirect_uri_mismatch` | 網址不是 `http://localhost:8080/` 或 GitHub Pages 網址；或 OAuth 用戶端的「已授權的重新導向 URI」少了結尾 `/` |
+| Google 登入後顯示「這個 Google 帳號沒有使用權限」 | 選錯帳號，或 Members 裡該成員的 email 不同／未啟用 |
+| 「Google 登入驗證失敗」 | 指令碼屬性 `GOOGLE_CLIENT_ID` 和 OAuth 用戶端 ID 不一致；或登入後太久才回到頁面，重新登入即可 |
+| 「無法連線」 | 網路問題，或 `config.js` 的網址錯誤：瀏覽器直接打開該網址應看到 `{"ok":true,...}` |

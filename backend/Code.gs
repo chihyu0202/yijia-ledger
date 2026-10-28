@@ -9,6 +9,7 @@
 /** action → 處理函式。public 表示不需要 session */
 function routes_() {
   return {
+    'auth.config': { fn: authConfig_, public: true },
     'auth.login': { fn: authLogin_, public: true },
     'auth.logout': { fn: authLogout_, public: true },
     'me': { fn: me_ },

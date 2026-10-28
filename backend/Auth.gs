@@ -9,6 +9,13 @@ const SESSION_DAYS = 30;
 const SESSION_PREFIX = 'sess_';
 const GOOGLE_ISSUERS = ['accounts.google.com', 'https://accounts.google.com'];
 
+/** 登入前前端需要的設定；Client ID 放在指令碼屬性，不寫進公開的前端程式碼 */
+function authConfig_() {
+  const clientId = props_().getProperty(PROP.GOOGLE_CLIENT_ID);
+  if (!clientId) throw fail_('CONFIG', '後端尚未設定 GOOGLE_CLIENT_ID。');
+  return { client_id: clientId };
+}
+
 function authLogin_(payload) {
   const idToken = String(payload.id_token || '');
   const nonce = String(payload.nonce || '');

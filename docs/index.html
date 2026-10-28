@@ -2,21 +2,99 @@
 <html lang="zh-Hant-TW">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#1F6F63">
   <title>一家帳</title>
-  <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #F6F7F5; color: #1C2321;
-           font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif; }
-    main { text-align: center; padding: 24px; }
-    h1 { margin: 0 0 8px; color: #1F6F63; font-size: 32px; }
-    p { margin: 0; color: #4A5552; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main>
+  <div id="offline" class="offline" hidden>目前離線，無法儲存</div>
+
+  <!-- 載入中／登入 -->
+  <section id="login" class="login" hidden>
     <h1>一家帳</h1>
-    <p>建置中 · 第二階段：GitHub Pages 已正常運作</p>
-  </main>
+    <p id="login-msg" class="login-msg"></p>
+    <button id="login-btn" class="btn btn-primary" type="button">使用 Google 登入</button>
+  </section>
+
+  <div id="app" hidden>
+    <main>
+      <!-- 首頁 -->
+      <section id="tab-home" class="tab" hidden>
+        <h2 class="tab-title">首頁</h2>
+        <p class="placeholder">統計（第四階段 C 製作）</p>
+      </section>
+
+      <!-- 新增 -->
+      <section id="tab-add" class="tab" hidden>
+        <h2 class="tab-title" id="form-title">新增</h2>
+        <form id="expense-form" novalidate>
+          <label class="field amount-field">
+            <span class="label">金額</span>
+            <span class="amount-wrap">
+              <span class="currency">$</span>
+              <input id="f-amount" name="amount" inputmode="decimal" autocomplete="off" placeholder="0">
+            </span>
+          </label>
+
+          <label class="field">
+            <span class="label">項目</span>
+            <input id="f-item" name="item" maxlength="50" autocomplete="off" placeholder="例如：午餐">
+          </label>
+
+          <div class="field">
+            <span class="label">歸屬</span>
+            <div id="f-scope" class="chips" role="radiogroup" aria-label="歸屬"></div>
+          </div>
+
+          <div class="field">
+            <span class="label">分類</span>
+            <div id="f-category" class="chips" role="radiogroup" aria-label="分類"></div>
+          </div>
+
+          <label class="field">
+            <span class="label">日期</span>
+            <input id="f-date" name="expense_date" type="date">
+          </label>
+
+          <label class="field">
+            <span class="label">備註</span>
+            <textarea id="f-note" name="note" maxlength="200" rows="2" placeholder="選填"></textarea>
+          </label>
+
+          <p id="form-error" class="form-error" role="alert"></p>
+          <button id="save-btn" class="btn btn-primary btn-block" type="submit">儲存</button>
+        </form>
+      </section>
+
+      <!-- 紀錄 -->
+      <section id="tab-records" class="tab" hidden>
+        <h2 class="tab-title">紀錄</h2>
+        <p class="placeholder">紀錄列表（第四階段 B 製作）</p>
+      </section>
+
+      <!-- 設定 -->
+      <section id="tab-settings" class="tab" hidden>
+        <h2 class="tab-title">設定</h2>
+        <p class="placeholder">分類、成員管理（第四階段 D 製作）</p>
+        <div class="card">
+          <p>目前登入：<strong id="me-name"></strong></p>
+          <button id="logout-btn" class="btn btn-secondary btn-block" type="button">登出</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="tabbar">
+      <button type="button" data-tab="home">首頁</button>
+      <button type="button" data-tab="add">新增</button>
+      <button type="button" data-tab="records">紀錄</button>
+      <button type="button" data-tab="settings">設定</button>
+    </nav>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

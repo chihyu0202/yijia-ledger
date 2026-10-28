@@ -7,3 +7,6 @@ backend/.clasp.json
 .DS_Store
 node_modules/
 *.log
+
+# 給 Claude 的專案說明（含家庭成員資訊，不公開）
+CLAUDE.md

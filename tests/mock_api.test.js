@@ -127,6 +127,7 @@ const today = formatDate(new Date(), '', 'yyyy-MM-dd');
 const month = today.slice(0, 7);
 
 // ---------- 登入 ----------
+check('auth.config 回傳 Client ID', call('auth.config', null).data.client_id === store.GOOGLE_CLIENT_ID);
 errCode('假 token', call('auth.login', null, { id_token: 'bad', nonce: 'n1' }), 'UNAUTHORIZED');
 errCode('aud 不符', call('auth.login', null, { id_token: googleToken('gloria@example.com', { aud: 'other' }), nonce: 'n1' }), 'UNAUTHORIZED');
 errCode('iss 不符', call('auth.login', null, { id_token: googleToken('gloria@example.com', { iss: 'evil.com' }), nonce: 'n1' }), 'UNAUTHORIZED');

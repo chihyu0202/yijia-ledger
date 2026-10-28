@@ -1,0 +1,110 @@
+:root {
+  --primary: #1F6F63;
+  --primary-light: #E3F0ED;
+  --primary-dark: #134A42;
+  --bg: #F6F7F5;
+  --text: #1C2321;
+  --muted: #5B6764;
+  --line: #D9E0DD;
+  --danger: #B3261E;
+  --tabbar-h: 60px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[hidden] { display: none !important; }
+
+button, input, textarea { font: inherit; color: inherit; }
+
+/* 登入 */
+.login {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px; text-align: center;
+}
+.login h1 { margin: 0 0 12px; color: var(--primary); font-size: 36px; }
+.login-msg { margin: 0 0 24px; color: var(--muted); min-height: 1.5em; }
+
+/* 版面 */
+main {
+  max-width: 560px; margin: 0 auto;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom));
+}
+.tab-title { margin: 0 0 16px; font-size: 22px; color: var(--primary-dark); }
+.placeholder { color: var(--muted); }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; }
+.card p { margin: 0 0 12px; }
+
+/* 按鈕 */
+.btn {
+  min-height: 48px; padding: 0 20px; border-radius: 12px; border: 0;
+  font-weight: 600; cursor: pointer;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:active { background: var(--primary-dark); }
+.btn-primary:disabled { background: #9DB8B2; cursor: not-allowed; }
+.btn-secondary { background: var(--primary-light); color: var(--primary-dark); }
+.btn-block { width: 100%; }
+
+/* 表單 */
+.field { display: block; margin-bottom: 16px; }
+.label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--muted); }
+.field input, .field textarea {
+  width: 100%; min-height: 48px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff;
+  font-size: 16px; /* iOS 小於 16px 會自動放大 */
+}
+.field input:focus, .field textarea:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: transparent; }
+.field textarea { resize: vertical; }
+
+.amount-wrap { display: flex; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; }
+.amount-wrap:focus-within { outline: 2px solid var(--primary); outline-offset: -1px; border-color: transparent; }
+.currency { font-size: 28px; color: var(--muted); margin-right: 6px; }
+.amount-field input {
+  border: 0; outline: none !important; padding: 8px 0; min-height: 64px;
+  font-size: 36px; font-weight: 700; background: transparent;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  min-height: 44px; padding: 0 16px; border-radius: 22px;
+  border: 1px solid var(--line); background: #fff; cursor: pointer;
+}
+.chip[aria-checked="true"] { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+
+.form-error { color: var(--danger); min-height: 1.5em; margin: 0 0 8px; }
+
+/* 底部分頁 */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex; background: #fff; border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar button {
+  flex: 1; height: var(--tabbar-h); border: 0; background: none;
+  color: var(--muted); font-size: 15px; cursor: pointer;
+}
+.tabbar button[aria-current="page"] { color: var(--primary); font-weight: 700; box-shadow: inset 0 3px 0 var(--primary); }
+
+/* 提示 */
+.offline {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--danger); color: #fff; text-align: center;
+  padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
+}
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom));
+  background: var(--primary-dark); color: #fff; padding: 12px 20px; border-radius: 12px;
+  max-width: calc(100% - 32px); z-index: 20;
+}
